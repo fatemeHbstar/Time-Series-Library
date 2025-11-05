@@ -26,16 +26,15 @@ class Exp_Short_Term_Forecast(Exp_Basic):
             self.args.seq_len = 2 * self.args.pred_len  # input_len = 2*pred_len
             self.args.label_len = self.args.pred_len
             self.args.frequency_map = M4Meta.frequency_map[self.args.seasonal_patterns]
-        model = self.model_dict[self.args.model].Model(self.args).float()
-
-        else:
+        else:  #my addition
             # Assuming weekly frequency for custom data
             if self.args.freq == 'w':
                 self.args.frequency_map = 1
             # Add other frequency mappings for custom data if needed
             else:
                 self.args.frequency_map = 1 # Default to 1 if frequency is unknown
-                
+        model = self.model_dict[self.args.model].Model(self.args).float()
+
         if self.args.use_multi_gpu and self.args.use_gpu:
             model = nn.DataParallel(model, device_ids=self.args.device_ids)
         return model
