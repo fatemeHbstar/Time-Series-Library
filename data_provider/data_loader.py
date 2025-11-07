@@ -307,6 +307,84 @@ class Dataset_Custom(Dataset):
         return self.scaler.inverse_transform(data)
 
 
+class CustomSegLoader(Dataset):
+    def __init__(self, root_path, data_path, win_size, step=1, flag='train', scale=True):
+        """
+        Unsupervised anomaly detection dataset loader (windowed time series).
+        
+        Parameters:
+        ----------
+        root_path : str
+            Directory where your CSV file is stored.
+        data_path : str
+            CSV filename (e.g., 'your_data.csv').
+        win_size : int
+            Sliding window size (number of timesteps per sample).
+        step : int, default=1
+            Step size between windows.
+        flag : str, one of ['train', 'val', 'test']
+            Which split to load.
+        scale : bool, default=True
+            Whether to normalize data using StandardScaler.
+        """
+        self.flag = flag
+        self.step = step
+        self.win_size = win_size
+        self.scaler = StandardScaler()
+        self.scale = scale
+
+        df_raw = pd.read_csv(os.path.join(root_path, data_path))
+
+        if 'date' in df_raw.columns:
+            df_raw = df_raw.drop(columns=['date'])
+        
+        df_raw = df_raw.select_dtypes(include=[np.number])  # ensure numeric only
+        df_raw = np.nan_to_num(df_raw)  # replace NaNs with 0
+
+        n = len(df_raw)
+        n_train = int(n * 0.7)
+        n_val = int(n * 0.1)
+        n_test = n - n_train - n_val
+
+        train_data = df_raw[:n_train]
+        val_data = df_raw[n_train - win_size : n_train + n_val]  # keep overlap for windowing
+        test_data = df_raw[n_train + n_val - win_size :]
+
+        if self.scale:
+            self.scaler.fit(train_data)
+            train_data = self.scaler.transform(train_data)
+            val_data = self.scaler.transform(val_data)
+            test_data = self.scaler.transform(test_data)
+
+        self.train = train_data
+        self.val = val_data
+        self.test = test_data
+
+        print(f"Train: {self.train.shape}, Val: {self.val.shape}, Test: {self.test.shape}")
+
+    def __len__(self):
+        if self.flag == 'train':
+            return (self.train.shape[0] - self.win_size) // self.step + 1
+        elif self.flag == 'val':
+            return (self.val.shape[0] - self.win_size) // self.step + 1
+        elif self.flag == 'test':
+            return (self.test.shape[0] - self.win_size) // self.step + 1
+
+    def __getitem__(self, index):
+        index = index * self.step
+        dummy_label = np.zeros((self.win_size, 1), dtype=np.float32)
+
+        if self.flag == 'train':
+            x = self.train[index:index + self.win_size]
+        elif self.flag == 'val':
+            x = self.val[index:index + self.win_size]
+        elif self.flag == 'test':
+            x = self.test[index:index + self.win_size]
+
+        return np.float32(x), dummy_label
+
+
+
 class Dataset_M4(Dataset):
     def __init__(self, args, root_path, flag='pred', size=None,
                  features='S', data_path='ETTh1.csv',
