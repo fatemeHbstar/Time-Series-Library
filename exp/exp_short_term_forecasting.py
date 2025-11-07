@@ -128,7 +128,7 @@ class Exp_Short_Term_Forecast(Exp_Basic):
         self.model.load_state_dict(torch.load(best_model_path))
         return self.model
 
-    def vali(self, vali_data, vali_loader, criterion):
+    def vali(self, vali_loader, criterion):
         total_loss = []
         self.model.eval()
         with torch.no_grad():
