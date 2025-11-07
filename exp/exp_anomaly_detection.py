@@ -168,7 +168,7 @@ class Exp_Anomaly_Detection(Exp_Basic):
             test_labels.append(batch_y)
 
         attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
-        test_errors = np.concatenate(attens_energy, axis=0).reshape(-1)
+        test_errors = np.concatenate(attens_energy, axis=0).reshape(-1)#
         test_energy = np.array(attens_energy)
         combined_energy = np.concatenate([train_energy, test_energy], axis=0)
         threshold = np.percentile(combined_energy, 100 - self.args.anomaly_ratio)
@@ -179,12 +179,13 @@ class Exp_Anomaly_Detection(Exp_Basic):
         test_labels = np.concatenate(test_labels, axis=0).reshape(-1)
         #test_labels = np.array(test_labels)
         # (4) handle dummy labels (no ground truth)
-        if np.all(test_labels == 0):
+        if np.all(test_labels == 0):#
             print("\n No ground-truth labels detected. Only reconstruction error and thresholding are shown.")
             np.save(os.path.join(folder_path, 'test_errors.npy'), test_errors)
             np.save(os.path.join(folder_path, 'threshold.npy'), np.array([threshold]))
             print(f"Saved test reconstruction errors to {folder_path}")
-            return test_errors, threshold
+            return
+        return
         #gt = test_labels.astype(int)
 
         #print("pred:   ", pred.shape)
